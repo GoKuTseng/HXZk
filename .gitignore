@@ -26,6 +26,12 @@ dist/
 *.log
 logs/
 
+# 本地敏感配置（数据库账号等，勿入库）
+application-local.yml
+application-local.yaml
+appsettings.Local.json
+*.local.env
+
 # 系统
 Thumbs.db
 .DS_Store

@@ -22,7 +22,24 @@
 ## 当前状态
 
 - **M0 真机可行性验证：✅ 完成**（2026-09-29，6 台实机/四种型号全覆盖；当晚根因修订：读取 API 配对错误坐实，详见 `../m0-probe/M0-实时通道探测记录.md`）
-- **M1 地基：待启动** —— 工程骨架（WinSW 服务化、CI 打包）→ 设备 CRUD + 分组 → 1 台终端 Pull 流水入库 → 单个用户（工号/姓名/人脸）下发可查 → Push/RegEvent 实时最小链路 → 人员接收 API 先收数据入库
+- **M1 地基：进行中**（2026-09-29 启动，本机开发、可视化优先）
+
+M1 进度：
+
+- [x] M1-2 主库 DDL（`database/schema-mysql8.sql`，MySQL 8.0，打卡/门禁月分区）
+- [x] M1-3 hxzk-server 骨架（Boot 2.7.18 + MyBatis-Plus 3.5.7，统一返回体/异常/分页，编译通过）
+- [x] M1-4 hxzk-web 骨架（Vite + Vue3 + Element Plus，构建通过）
+- [x] M1-5 设备台账导入种子（`database/seed-device.sql`，43 台幂等 UPSERT）+ 设备/分组 CRUD API（编译通过，待 MySQL 连通后冒烟）
+- [x] M1-6 设备管理页（第一屏：筛选/异常高亮/CRUD 对话框/分组管理，构建通过）
+- [ ] M1-7 网关骨架 + TFT 配对读取（待 .NET 8 SDK）
+- [ ] M1-8 单台 Pull 流水入库 + 记录查询页
+- [ ] M1-9 人员接收 API（契约已定）+ M1-10 单用户下发 + M1-11 实时最小链路
+
+本地运行：
+
+- 数据库：先执行 `database/schema-mysql8.sql` 再执行 `database/seed-device.sql`
+- 服务端：`hxzk-server/`，`mvn spring-boot:run`，默认 8080；真实口令放 `application-local.yml`（已 gitignore，模板见 `application-local.yml.example`）
+- 前端：`hxzk-web/`，`npm install && npm run dev`，5173 端口已配 `/api` 代理到 8080
 
 ## 网关读取红线（M0 血泪结论）
 

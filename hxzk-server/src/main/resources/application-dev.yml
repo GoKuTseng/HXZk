@@ -1,0 +1,7 @@
+# 开发环境（可入库，不含真实口令；本机口令请放 application-local.yml，已 gitignore）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/hxzk?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root

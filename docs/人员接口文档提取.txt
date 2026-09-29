@@ -1,0 +1,81 @@
+{  "reason": "用户要求将删除人员接口按同样格式整理进文档，这是一个明确的文案整理任务，不涉及搜索、计算、代码生成等需要调用工具的操作。直接根据提供的文本内容进行结构化整理和输出即可。",  "tool_calls": []}
+OA 人员推送接口文档（新增/修改/删除）
+1. 基本信息
+--- TABLE ---
+项 | 值
+新增/修改接口地址 | POST http://192.168.12.85:8080/api/persons/sync
+删除接口地址 | POST http://192.168.12.85:8080/api/persons/remove
+Content-Type | application/json
+鉴权方式 | 请求头 X-API-Key（对应服务端配置项 api.key；未配置时放行，生产环境必须配置）
+新增/修改接口语义 | 新增与修改共用此接口。按 pin（工号）进行幂等 upsert：不存在即新增，已存在即更新。
+请求限制 | 单次请求人员数量 ≤ 2000 人；pin、name 为必填项。
+--- END TABLE ---
+2. 新增/修改接口请求参数
+2.1 顶层参数
+--- TABLE ---
+字段 | 类型 | 必填 | 说明
+requestId | string | 否 | OA 请求号（当前版本未使用）
+persons | array | 是 | 人员数组，包含 1~2000 条人员数据
+--- END TABLE ---
+2.2 persons 元素参数
+--- TABLE ---
+字段 | 类型 | 必填 | 说明
+pin | string | 是 | 工号，平台唯一键（也是设备用户号）
+name | string | 是 | 姓名
+oaUserId | string | 否 | 泛微用户唯一 ID（平台建唯一索引映射）
+dept | string | 否 | 部门
+cardNo | string | 否 | 卡号
+status | string | 否 | ACTIVE 在职（默认）/ RESIGNED 离职；离职会自动清空全部组归属并在设备端禁用
+pri | int | 否 | 设备用户权限，0=普通（默认）
+photo | string | 否 | 人脸注册照。要求：Base64 编码 JPG，≤500KB；支持 data:image/jpeg;base64, 前缀；不可传图片 URL；不合规仅丢弃照片不影响入库；更新时未携带则保留原照片
+accGroups | string[] | 条件 | 门禁组名称数组，全量语义（详见下方规则）
+fingerprints | array | 否 | 预留字段，当前版本不处理
+devices | array | 否 | 预留字段，当前版本不处理
+--- END TABLE ---
+2.3 accGroups 全量语义规则
+未携带（null） → 不处理该人的组归属
+空数组 [] → 清空该人的全部组归属
+非空数组 → 以本次推送为准，diff 自动加组/退组
+注意：组名须与平台门禁组精确匹配且为启用状态；若组不存在/已停用/目标组之间存在同设备冲突 → 该人 FAILED 且不做任何变更，其余人正常处理
+3. 新增/修改接口响应结构
+{  "code": 0,  "msg": "ok",  "data": {    "accepted": 2,    "batchNo": "B1758270000000",    "groupOk": 2,    "groupFailed": 0,    "groupSkipped": 0,    "groupResults": [      {        "pin": "212502",        "name": "张三",        "result": "OK",        "added": ["白班组"],        "removed": []      },      {        "pin": "10086",        "name": "李四",        "result": "SKIPPED",        "reason": "未携带 accGroups 字段，不处理组归属"      }    ]  }}
+3.1 响应字段说明
+--- TABLE ---
+字段 | 说明
+code | 0 成功；401 API Key 无效；1 业务错误（persons 为空/超限等，整批拒绝）
+data.accepted | 成功受理的人数
+data.batchNo | 批次号
+data.groupOk | 组归属处理成功的人数
+data.groupFailed | 组归属处理失败的人数
+data.groupSkipped | 组归属处理跳过的人数
+data.groupResults[].result | OK 成功 / FAILED 该人失败（reason 说明）/ SKIPPED 未携带 accGroups
+data.groupResults[].added / removed | 本次实际加组/退组的组名（仅变化时返回）
+--- END TABLE ---
+4. 新增/修改接口调用示例
+示例 1：新增人员（含照片 + 组归属）
+{  "requestId": "OA-20260919-0001",  "persons": [    {      "oaUserId": "wb_88231",      "pin": "212502",      "name": "张三",      "dept": "生产部",      "cardNo": "0012345678",      "status": "ACTIVE",      "pri": 0,      "photo": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...(替换为真实Base64，≤500KB)",      "accGroups": ["白班组", "甲班门禁"]    }  ]}
+示例 2：修改人员（改名/调部门，不带照片 → 保留原照片）
+{  "requestId": "OA-20260919-0002",  "persons": [    {      "pin": "212502",      "name": "张三丰",      "dept": "品质部",      "accGroups": ["白班组"]    }  ]}
+示例 3：离职（清空全部组归属，设备端禁用）
+{  "requestId": "OA-20260919-0003",  "persons": [    {      "pin": "212502",      "name": "张三",      "status": "RESIGNED"    }  ]}
+5. 删除人员接口
+5.1 基本信息
+--- TABLE ---
+项 | 值
+接口地址 | POST http://<服务器IP>:<端口>/api/persons/remove
+鉴权方式 | 请求头 X-API-Key（同上）
+--- END TABLE ---
+5.2 请求参数
+{  "pins": ["212502", "10086"]}
+--- TABLE ---
+字段 | 类型 | 必填 | 说明
+pins | string[] | 是 | 工号数组
+--- END TABLE ---
+5.3 响应示例
+{  "code": 0,  "msg": "ok",  "data": {    "removed": 2  }}
+6. 对接注意事项
+幂等重推安全：同一人重复推送结果一致，可放心重试。
+photo 契约：必须为 Base64 编码的 JPG 图片，大小 ≤500KB；传 URL 会被明确拒绝（日志可见）。
+组名校验：使用示例组名联调前，请确认平台已建同名门禁组，否则该人 groupResults 将返回 FAILED。
+异步下发：接口返回仅代表受理成功，设备端写入状态需通过 GET /api/persons/sync-status?pin=xxx 查询；失败行由平台 10 分钟对账自动重试。
+(AI生成)

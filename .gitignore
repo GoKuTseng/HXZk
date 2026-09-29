@@ -1,0 +1,31 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+publish/
+
+# Node / 前端
+node_modules/
+dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# 运行时
+*.log
+logs/
+
+# 系统
+Thumbs.db
+.DS_Store
